@@ -1,0 +1,66 @@
+name: Tests
+
+# Runs the full automated suite on every push and PR — the whole point of
+# writing tests is that they run themselves; a suite nobody re-runs
+# automatically is just documentation with extra steps.
+on:
+  push:
+    branches: ["**"]
+  pull_request:
+    branches: ["**"]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: gigpassport_test
+        ports:
+          - 5432:5432
+        # Wait for Postgres to actually be ready before tests try to
+        # connect — otherwise the first run is flaky depending on how
+        # fast the container starts.
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: "pip"
+
+      - name: Install system dependencies (OCR)
+        run: sudo apt-get update && sudo apt-get install -y tesseract-ocr poppler-utils
+
+      - name: Install Python dependencies
+        run: pip install -r requirements.txt
+
+      - name: Train the scoring model
+        # Tests exercise real scoring, so a model artifact must exist —
+        # this mirrors exactly what a fresh local setup requires too.
+        run: python -m app.scoring.train
+        env:
+          MODEL_PATH: app/scoring/artifacts/model.pkl
+          MODEL_VERSION: v0.2.0
+
+      - name: Run test suite
+        run: python -m pytest tests/ -v
+        env:
+          # conftest.py overrides DATABASE_URL to point at gigpassport_test
+          # regardless of this value, but SECRET_KEY/PASSPORT_SIGNING_KEY
+          # still need to be set for the app to import cleanly — CI
+          # secrets, never the real production ones, and never committed.
+          SECRET_KEY: ci-test-secret-key-never-used-in-production
+          PASSPORT_SIGNING_KEY: ci-test-passport-key-never-used-in-production
+          DEBUG: "true"
