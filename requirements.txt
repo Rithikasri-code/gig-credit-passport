@@ -1,0 +1,26 @@
+fastapi>=0.118
+uvicorn[standard]==0.32.0
+pydantic>=2.10
+pydantic-settings>=2.6
+sqlalchemy>=2.0.41
+asyncpg>=0.30
+psycopg2-binary>=2.9.9
+alembic==1.13.3
+python-dotenv>=1.2.2
+httpx==0.27.2
+pandas==2.2.3
+numpy>=2.1
+scikit-learn==1.5.2
+xgboost==2.1.1
+shap>=0.47.2  # 0.46.0 has a numpy 2.x incompatibility in its (unused-by-us) color plotting module
+python-jose[cryptography]>=3.4.0  # 3.3.0 has two known CVEs (PYSEC-2024-232, PYSEC-2024-233)
+passlib[bcrypt]==1.7.4
+bcrypt==4.0.1  # pinned: bcrypt>=4.1 breaks passlib's version detection (spurious "72 byte" errors)
+python-multipart>=0.0.31
+pytest>=9.0.3
+pytest-asyncio>=1.0
+
+# OCR ingestion (self-reported earnings screenshots/statements — supplementary signal only)
+pytesseract==0.3.13
+pdf2image==1.17.0
+pillow>=12.3.0
